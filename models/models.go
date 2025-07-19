@@ -1,6 +1,11 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+)
 
 type State string
 
@@ -73,6 +78,77 @@ func (c *Card) IsValid() (err error) {
 	}
 
 	err = c.Status.Ok()
+
+	return
+}
+
+func LoadFromCSVRow(header string, row string) (card Card, err error) {
+	var splitChar string
+
+	if strings.Contains(header, ";") {
+		splitChar = ";"
+	} else if strings.Contains(header, ",") {
+		splitChar = ","
+	} else if strings.Contains(header, ".") {
+		splitChar = "."
+	} else {
+		err = fmt.Errorf("unable to parse csv split character, unknown character used")
+
+		return
+	}
+
+	headerParams := strings.Split(header, splitChar)
+	rowParams := strings.Split(row, splitChar)
+
+	if len(headerParams) != len(rowParams) {
+		err = fmt.Errorf("unable to parse csv row to struct, different number of fields")
+
+		return
+	}
+
+	rStruct := reflect.ValueOf(card)
+
+	for i, e := range headerParams {
+		eAsStructField := e
+
+		field := rStruct.FieldByName(eAsStructField)
+
+		if !field.IsValid() {
+			err = fmt.Errorf("unable to parse csv row to struct, unknown header field %s", e)
+			return
+		}
+
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(rowParams[i])
+		case reflect.Int:
+			conv, err := strconv.Atoi(rowParams[i])
+
+			if err != nil {
+				return card, err
+			}
+			field.SetInt(int64(conv))
+		case reflect.Float32:
+			conv, err := strconv.ParseFloat(e, field.Type().Bits())
+
+			if err != nil {
+				return card, err
+			}
+
+			field.SetFloat(conv)
+		default:
+			fType := field.Type()
+
+			if fType == reflect.TypeOf(State("")) {
+				field.Set(reflect.ValueOf(State(e)))
+			} else if fType == reflect.TypeOf(Status("")) {
+				field.Set(reflect.ValueOf(Status(e)))
+			}
+		}
+
+	}
+
+	err = card.IsValid()
 
 	return
 }
