@@ -42,9 +42,9 @@ func (c *Card) InsertCard(db *pgxpool.Pool) (err error) {
 		return
 	}
 
-	query := "INSERT INTO cards (id, name, collection, state, value, amount, status) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+	query := "INSERT INTO cards (name, collection, state, value, amount, status) VALUES ($1, $2, $3, $4, $5, $6)"
 
-	_, err = db.Exec(context.Background(), query, c.Id, c.Name, c.Collection, c.State, c.Value, c.Amount, c.Status)
+	_, err = db.Exec(context.Background(), query, c.Name, c.Collection, c.State, c.Value, c.Amount, c.Status)
 
 	return
 }

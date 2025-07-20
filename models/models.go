@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type State string
@@ -106,10 +107,15 @@ func LoadFromCSVRow(header string, row string) (card Card, err error) {
 		return
 	}
 
-	rStruct := reflect.ValueOf(card)
+	rStruct := reflect.ValueOf(&card).Elem()
 
 	for i, e := range headerParams {
 		eAsStructField := e
+
+		for i, r := range eAsStructField {
+			eAsStructField = string(unicode.ToUpper(r)) + eAsStructField[i+len(string(r)):]
+			break
+		}
 
 		field := rStruct.FieldByName(eAsStructField)
 
@@ -129,7 +135,7 @@ func LoadFromCSVRow(header string, row string) (card Card, err error) {
 			}
 			field.SetInt(int64(conv))
 		case reflect.Float32:
-			conv, err := strconv.ParseFloat(e, field.Type().Bits())
+			conv, err := strconv.ParseFloat(rowParams[i], field.Type().Bits())
 
 			if err != nil {
 				return card, err
